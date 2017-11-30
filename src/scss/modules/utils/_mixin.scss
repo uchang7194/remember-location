@@ -1,0 +1,41 @@
+@mixin centering-pos($direction: all) {
+
+  position: absolute;
+
+  @if $direction == all {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);  
+  } @else if $direction == vertical {
+    top: 50%;
+    transform: translateY(-50%);
+  } @else if $direction == horizontal {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+}
+
+@mixin clearfix {
+  &::after {
+    content: '';
+    display: block;
+    clear: both;
+  }
+}
+
+@mixin mobile {
+  @media screen and (max-width: $mobile){
+    @content;
+  }
+}
+@mixin tablet {
+  @media screen and (min-width: ($mobile + 1)) and (max-width: $tablet){
+    @content;
+  }
+}
+@mixin desktop {
+  @media screen and (min-width: ($tablet + 1)){
+    @content;
+  }
+}
+
