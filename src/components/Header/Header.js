@@ -1,6 +1,6 @@
-import React, { Component } from 'react'
+import React, { Component } from 'react';
+import PropTypes from 'prop-types';
 
-import ModalLogin from './ModalLogin';
 
 export default class Header extends Component {
 
@@ -8,34 +8,15 @@ export default class Header extends Component {
     super(props);
 
     this.state = {
-      is_logged_in: false,
-      active_modal_login: false,
-      user_info: {
-        auth: {},
-        picture: '',
-        name: '',
-        email: ''
-      }
+      
     };
 
-    this._handleClickedLoginModal = this._handleClickedLoginModal.bind(this);
-    this._handleClickedLogined = this._handleClickedLogined.bind(this);
     this._handleFacebookLogin = this._handleFacebookLogin.bind(this);
     this._handleFacebookLogout = this._handleFacebookLogout.bind(this);
     this._handleFacebookStatusChange = this._handleFacebookStatusChange.bind(this);
     this._handleCheckLoginStatus = this._handleCheckLoginStatus.bind(this);
   }
 
-  _handleClickedLoginModal() {
-    this.setState({
-      active_modal_login: !this.state.active_modal_login
-    });
-  }
-  _handleClickedLogined() {
-    this.setState({
-      is_logged_in: !this.state.is_logged_in
-    });
-  }
   _handleFacebookStatusChange = (response) => {
     console.log('status: ', response);
     let user_info = {};
@@ -48,56 +29,52 @@ export default class Header extends Component {
         user_info.name = response.name;
         user_info.picture = response.picture.data.url;
 
-        this.setState({
-          user_info
-        });
+        this.props.setUserInfo(user_info);
       });
 
-      // this._handleClickedLoginModal();
-      this._handleClickedLogined();
+      this.props.clickedLog();
     } else if( response.status === 'not_authorized' ) {
       console.log('not_authorized');
     } else {
       console.log('not connected');
-
     }
   }
-  _handleFacebookLogin = () => {
-    // window.FB.getLoginStatus(function(response) {
-    //   console.log(response);
-    // });
-    window.FB.login(this._handleCheckLoginStatus());
-  }
+  
   _handleCheckLoginStatus = (response) => {
     window.FB.getLoginStatus((response) => {
       this._handleFacebookStatusChange(response);
     });
   }
 
+  _handleFacebookLogin = () => {
+    
+    window.FB.login(this._handleCheckLoginStatus, {scope: 'public_profile,email'});
+  }
+
   _handleFacebookLogout = () => {
     window.FB.logout((response) => {
-      console.log('logout: ', response);
-      this._handleClickedLogined();
-      this.setState({
-        user_info: {
-          auth: {},
-          picture: '',
-          name: '',
-          email: ''
-        }
-      });
+
+      const user_info = {
+        auth: {},
+        picture: '',
+        name: '',
+        email: ''
+      }
+      this.props.clickedLog();
+      this.props.setUserInfo(user_info);
+    
     });
   }
   _renderedUserInfo = () => {
-    let is_logged_in = this.state.is_logged_in;
+    let is_logged_in = this.props.isLoggedIn;
 
     if( is_logged_in ) {
       return (
-        <a className="user-info">
+        <a className="user-info" href="#">
           <div>
-            <img src={this.state.user_info.picture} alt="유저 사진" />
+            <img src={this.props.user_info.picture} alt="유저 사진" />
           </div>
-          <span>{this.state.user_info.name}</span>
+          <span>{this.props.user_info.name}</span>
         </a>  
       );
     } else {
@@ -105,15 +82,15 @@ export default class Header extends Component {
     }
   }
   _renderedloggedBtn = () => {
-    let is_logged_in = this.state.is_logged_in;
+    let is_logged_in = this.props.isLoggedIn;
 
     if( !is_logged_in ) {
       return (
         <button 
           type="button"
-          onClick={() => { this._handleClickedLoginModal() }}
+          onClick={() => { this._handleFacebookLogin() }}
           >
-          로그인</button>
+          Facebook Login</button>
       );
     } else {
       return (
@@ -121,7 +98,7 @@ export default class Header extends Component {
           type="button"
           onClick={() => { this._handleFacebookLogout() }}
           >
-          로그아웃</button>
+          Logout</button>
       );
     }
   }
@@ -156,19 +133,20 @@ export default class Header extends Component {
 
   render() {
     return (
-      <header>
+      <header ref="header">
         <div className="header-inner">
           <div className="header-logged-box">
             {this._renderedUserInfo()}
             {this._renderedloggedBtn()}
           </div>
         </div>
-        <ModalLogin 
-          activeModalLogin={this.state.active_modal_login} 
-          handleClickedLoginBtn={this._handleClickedLoginModal}
-          handleFacebookLogin={this._handleFacebookLogin}
-          />
       </header>
     )
   }
+}
+
+Header.propTypes = {
+  clickedLog: PropTypes.func.isRequired,
+  setUserInfo: PropTypes.func.isRequired,
+  isLoggedIn: PropTypes.bool.isRequired
 }

@@ -1,12 +1,22 @@
+header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  box-shadow: 0 0 2px 2px #ddd;
+  background: #fff;
+  z-index: 9999;
+}
 .header-inner {
   max-width: 1000px;
+  height: $content-margin-top;
   margin: 0 auto;
   padding: 0 $default-padding;
   @include clearfix;
 }
 
 .header-logged-box {
-  $logged-box-size: 40px;
+  $logged-box-size: 30px;
 
   float: right;
   @include clearfix;
