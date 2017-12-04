@@ -1,0 +1,47 @@
+$default-box-color: rgba(75, 75, 75, 0.35);
+
+.modal-info {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: $default-box-color;
+
+  .modal-info-inner {
+    @include centering-pos(all);
+    width: 75%;
+    min-height: 200px;
+    background: #fff;
+  }
+}
+.modal-info-form {
+  legend {
+    @extend %a11y-hidden;
+  }
+  label {
+    display: block;
+  }
+  .location_name {
+    display: block;
+  }
+  
+}
+.modal-info-settings {
+  position: absolute;
+  right: 20px;
+  top: 10px;
+  li {
+    margin-bottom: 5px;
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+  & > div {
+    position: absolute;
+    top: 0;
+    right: 110%;
+    width: 5rem;
+    text-align: center;
+  }
+}
