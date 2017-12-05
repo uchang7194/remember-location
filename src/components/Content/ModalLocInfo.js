@@ -9,11 +9,11 @@ export default class ModalLocInfo extends Component {
     super(props);
 
     this.state = {
-      is_modified: false,
-      is_deleted: false,
-      marker_info: {
-        location_name: '',
-        location_des: ''
+      isModified: false,
+      isDeleted: false,
+      markerInfo: {
+        marker_name: '',
+        marker_des: ''
       },
     }
   }
@@ -24,80 +24,67 @@ export default class ModalLocInfo extends Component {
 
   _handleOnChage = (what, e) => {
     
-    const copy_marker_info = Object.assign({}, this.state.marker_info);
+    const copy_marker_info = Object.assign({}, this.state.markerInfo);
 
     copy_marker_info[what] = e.target.value;
     this.setState({
-      marker_info: copy_marker_info
+      markerInfo: copy_marker_info
     })
   }
   
   _handleOnClick = (type) => {
-    const data = Object.assign({}, this.state.marker_info);
+    const data = Object.assign({}, this.state.markerInfo);
 
+  
     if( type === 'save' ) {
-      this.props.setLocData(data);
+      data.isSaved = true;
+      this.props.handleMarkersData(data);
     } else if( type === 'cancle' ) {
-      this.props.toggleModal();
-    }
-  }
-
-  _handleWhatInput = (what) => {
-
-    switch(what) {
-      case 'locname': 
-        return 'location_name';
-      default:
-        return 'nothing';
+      this.props.handleToggleModal();
     }
   }
 
   _renderInfo() {
 
-    const marker_info = this.props.marker_info;
-
-    if( this.state.is_modified ) {
+    if( this.state.isModified ) {
       return (
         <div>
           <div className="modify-locname-area">
             <label>장소</label>
             <input 
               type="text"
-              value={this.state.marker_info.location_name}
-              onChange={ (e) => {this._handleOnChage('location_name', e)} }
+              value={this.state.markerInfo.marker_name}
+              onChange={ (e) => {this._handleOnChage('marker_name', e)} }
               />
           </div>
           <div className="modify-des-area">
             <label>설명</label>
             <textarea 
-              value={this.state.marker_info.location_des}
-              onChange={ (e) => {this._handleOnChage('location_des', e)} }
+              value={this.state.markerInfo.marker_des}
+              onChange={ (e) => {this._handleOnChage('marker_des', e)} }
               />
           </div>
         </div>
       );
     } else {
       return (
-        <span className="location_name">{this.state.marker_info.location_name}</span>
+        <span className="location_name">{this.state.markerInfo.location_name}</span>
       );
     }
   }
 
   _initState = () => {
-    const props_marker_info = Object.assign({}, this.props.marker_info);
-    let copy_marker_info = Object.assign({}, this.state.marker_info),
-        is_modified = false;
+    const _marker_info = Object.assign({}, this.props.markerInfo);
+    let _isModified = false;
 
-    if( props_marker_info.is_modified ) {
-      console.log('marker_info가 빈 객체일 때');
-      is_modified = true;
+    if( !_marker_info.isSaved ) {
+      console.log('저장된 marker 정보가 아닐 때');
+      _isModified = true;
     }
 
-    copy_marker_info = props_marker_info
-
     this.setState({
-      is_modified,
-      marker_info: copy_marker_info
+      isModified: _isModified,
+      markerInfo: _marker_info
     });
   }
   componentDidMount = () => {
@@ -138,7 +125,7 @@ export default class ModalLocInfo extends Component {
 }
 
 ModalLocInfo.propTypes = {
-  marker_info: PropTypes.object.isRequired,
-  setLocData: PropTypes.func.isRequired,
-  toggleModal: PropTypes.func.isRequired
+  markerInfo: PropTypes.object.isRequired,
+  handleMarkersData: PropTypes.func.isRequired,
+  handleToggleModal: PropTypes.func.isRequired
 };

@@ -10,14 +10,10 @@ export default class Content extends Component {
     this.state = {
       current_coords: {},
     }
-
-    this._handleGeoLocation = this._handleGeoLocation.bind(this);
-    this._handleErrorGeoLoc = this._handleErrorGeoLoc.bind(this);
-    this._handleSuccessGeoLoc = this._handleSuccessGeoLoc.bind(this);
   }
   // geolocation으로 좌표값 구하기
 
-  _handleGeoLocation() {
+  _handleGeoLocation = () => {
     const geolocation = navigator.geolocation;
 
     if( geolocation ) {
@@ -26,7 +22,7 @@ export default class Content extends Component {
       }, this._handleErrorGeoLoc);
     }
   }
-  _handleSuccessGeoLoc(position) {
+  _handleSuccessGeoLoc = (position) => {
     /*
       coords
         - latitude
@@ -44,7 +40,7 @@ export default class Content extends Component {
       }
     });
   }
-  _handleErrorGeoLoc() {
+  _handleErrorGeoLoc = () => {
     alert('위치 권한을 허용해주세요.');
   }
   render() {

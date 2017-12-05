@@ -9,36 +9,26 @@ export default class Map extends Component {
     super(props);
 
     this.state = {
-      actived_modal: false,
-      clicked_marker_info: {},
-      location_data: []
+      activedModal: false,
+      clickedMarkerInfo: {},
+      markersData: [],
+      markers: []
     }
-  
-    this._initMap = this._initMap.bind(this);
-    this._initSearch = this._initSearch.bind(this);
-    this._moveTo = this._moveTo.bind(this);
-    this._addMarker = this._addMarker.bind(this);
-    this._handleLocData = this._handleLocData.bind(this);
-    this._handleToggleActivedModal = this._handleToggleActivedModal.bind(this);
-
+    // Global values
     this.map = null;
-    this.markers = [];
+    this.current_marker = null;
     this.info_window = null;
+
+    // Bound
+    this._handleToggleActivedModal = this._handleToggleActivedModal.bind(this);
+    this._handleMarkersData = this._handleMarkersData.bind(this);
   }
-  _initMap() {
+  _initMap = () => {
     const google = window.google;
     this.map = new google.maps.Map(document.getElementById('map'), {
       center: {lat: 35.90775699999999, lng: 127.76692200000002
       },
       zoom: 7
-    });
-
-    // map click event
-    this.map.addListener('click', function(position) {
-      const lat = position.latLng.lat(),
-            lng = position.latLng.lng();
-      
-      // 마커 추가
     });
 
     this._initSearch(google, this.map);
@@ -78,139 +68,167 @@ export default class Map extends Component {
     this.info_window = _info_window;
   }
   
-  _moveTo(position, loc_name='') {
+  _moveTo = (position, marker_name) => {
 
-    if( this._isContainedLocData(position) ) {
-      alert('이미 저장되어있습니다.');
-      return;
-    }
+    // if( this._isContainedLocData(position) ) {
+    //   alert('이미 저장되어있습니다.');
+    //   return;
+    // }
     this.map.panTo(position);
     this.map.setZoom(15);
-    this._addMarker(position, loc_name);
+    this._addMarker(position, marker_name);
   }
-  _clearMarkers() {
-    console.log(this.markers);
-    const markers = this.markers;
-    let i = 0, length = markers.length;
-    for( ; i < length; i++) {
-      if( markers[i] ) {
-        markers[i].setMap(null);
-      }
-    }
-  }
-  _isContainedLocData = (position) => {
-    let copy_location_data = this.state.location_data.slice(),
-        _copy_position = {};
-
-    if( this._positionValueTypeCheck(position) ) {
-      _copy_position.lat = position.lat();
-      _copy_position.lng = position.lng();
-    }
-
-    copy_location_data = copy_location_data.filter( data => {
-      const _position = data.location_pos;
-      
-      if( _position.lat === _copy_position.lat && _position.lng === _copy_position.lng ) {
-        return true;
-      } else{
-        return false;
-      }
-    });
-
-    return (copy_location_data.length !== 0) ? true : false;
-  }
-  _positionValueTypeCheck = (position) => {
-
-    return (typeof position.lat === 'function') ? true : false;
-  }
-  _addMarker(position, loc_name='', loc_des='') {
+  _addMarker = (position, marker_name = '', marker_des = '', isSaved = false) => {
     const google_map = window.google.maps;
-    let marker = new google_map.Marker({
+    let copy_marker = this.state.markers.slice();
+    let marker = null;
+
+    // 요구조건
+    // 1. 마커를 판별할 수 있는 변수를 넣었으면 좋겠음.
+    //  - 인덱스, location_data에서 렌더된 마커인지.
+    //    - 인덱스: index
+    //    - 불러온 데이터 인지 판별: isSaved
+
+    marker = new google_map.Marker({
       position: position,
       map: this.map,
-      animation: google_map.Animation.DROP
+      index: this.state.markers.length,
+      isSaved,
+      marker_name,
+      marker_des
     });
 
-    // this._clearMarkers();
+    // 이벤트 추가
+    this._markerOnClick(marker);
+
+    // 마커 추가
+    copy_marker.push(marker);
+    this.setState({
+      markers: copy_marker
+    });
+  }
+  _markerOnClick = (marker) => {
     marker.addListener('click', () => {
-      // console.log(this._info_window);
-      // this.info_window.open(this.map, marker);
-      let copy_marker_info = Object.assign({}, this.state.clicked_marker_info),
-          _position = {};
-      
-      if( loc_name !== '' && loc_des !== '' ) {
-        copy_marker_info.is_modified = false;
-      } else {
-        copy_marker_info.is_modified = true;
-      }
+      let copy_marker_info = Object.assign({}, this.state.clickedMarkerInfo);
+      const position = {
+              lat: marker.position.lat(),
+              lng: marker.position.lng()
+            },
+            marker_name = marker.marker_name,
+            marker_des = marker.marker_des,
+            isSaved = marker.isSaved,
+            idx = marker.index;
 
-      copy_marker_info.location_pos = {};
-      console.log( typeof position.lat );
-
-      if( typeof position.lat === 'function' ) {
-        _position.lat = (position.lat()).toFixed(12);
-        _position.lng = (position.lng()).toFixed(12);
-      } else {
-        _position.lat = (position.lat).toFixed(12);
-        _position.lng = (position.lng).toFixed(12);
-      }
-
-      copy_marker_info.location_pos = _position;
-      copy_marker_info.location_name = loc_name;
-      copy_marker_info.location_des = loc_des;
+      copy_marker_info = {
+        marker_name,
+        marker_des,
+        position,
+        isSaved,
+        idx
+      };
 
       this.setState({
-        actived_modal: !this.state.actived_modal,
-        clicked_marker_info: copy_marker_info
+        activedModal: true,
+        clickedMarkerInfo: copy_marker_info
       });
-    })
-    this.markers.push(marker);
-    
+    });
   }
-  _handleLocData = (data) => {
-    let copy_location_data = this.state.location_data.slice();
+  _clearMarkers = () => {
+    const _markers = this.state.markers,
+          length = _markers.length;
+    let i = 0;
 
-    // data: Object
-    copy_location_data.push(data);
+    for( ; i < length; i++) {
+      if( _markers[i] ) {
+        _markers[i].setMap(null);
+      }
+    }
 
     this.setState({
-      actived_modal: !this.state.actived_modal,
-      location_data: copy_location_data
+      markers: []
+    })
+  }
+  
+  _handleMarkersData = (data) => {
+    let copy_markers_data = this.state.markersData.slice();
+    let _markers = this.state.markers.slice();
+
+    // data: Object
+    copy_markers_data.push(data);
+    _markers[_markers.length-1].isSaved = true;
+    this.setState({
+      activedModal: !this.state.activedModal,
+      markersData: copy_markers_data,
+      markers: _markers
+    }, () => {
+      this._renderMarkers();
     });
   }
   _handleToggleActivedModal = () => {
     this.setState({
-      actived_modal: !this.state.actived_modal
+      activedModal: !this.state.activedModal
+    }, () => {
+      this._renderMarkers();
     });
   }
   _renderModal = () => {
-    if( this.state.actived_modal ) {
-      console.log('clicked_marker_info: ', this.state.clicked_marker_info);
+    if( this.state.activedModal ) {
       return (
         <ModalLocInfo 
-          setLocData={this._handleLocData}
-          toggleModal={this._handleToggleActivedModal}
-          marker_info={this.state.clicked_marker_info}/>
+          handleMarkersData={this._handleMarkersData}
+          handleToggleModal={this._handleToggleActivedModal}
+          markerInfo={this.state.clickedMarkerInfo}/>
       );
     }
   }
   _renderMarkers = () => {
-    const location_data = this.state.location_data;
-    
-    if( location_data.length === 0 ) { return; }
+    const _markers = this.state.markers.slice();
+    let delete_data = [];
 
-    location_data.forEach( data => {
+    console.log('prev _markers: ', _markers);
+
+    if( _markers.length === 0 ) { return; }
+
+    // this._clearMarkers();
+
+    _markers.forEach( (data, index) => {
       
-      this._addMarker(data.position, data.location_name, data.location_des);
+      if( !data.isSaved ) {
+        data.setMap(null);
+        delete_data.push(index);
+      }
     });
+
+    delete_data.forEach( data => {
+      _markers.splice(data, 1);
+    });
+
+    console.log('next _markers: ', _markers);
+    if( this.state.markers.length !== _markers.length ) {
+      this.setState({
+        markers: _markers
+      })
+    }
+  }
+  componentDidUpdate = (prevProps, prevState) => {
+    console.log('componentDidUpdate');
+    
+  }
+  
+  componentWillUpdate = (nextProps, nextState) => {
+    console.log('componentWillUpdate');
+    
+    // if( this.state.markersData.length !== nextState.markersData.length ) {
+    //   console.log('prev: ', this.state.markersData.length);
+    //   console.log('next: ', nextState.markersData.length);
+    //   this._renderMarkers();
+    // }
+      
   }
   componentDidMount() {
     this._initMap();
-    this._renderMarkers();
+    
   }
-
-  // shouldComponentUpdate = (nextProps, nextState) => {
-  // }
   
   componentDidUpdate = (prevProps, prevState) => {
     if( JSON.stringify(this.props.currentPosition) !== `{}` && prevProps.currentPosition !== this.props.currentPosition ) {
