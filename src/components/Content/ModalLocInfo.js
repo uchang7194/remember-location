@@ -12,10 +12,13 @@ export default class ModalLocInfo extends Component {
       isModified: false,
       isDeleted: false,
       markerInfo: {
-        marker_name: '',
+        marker_tit: '',
         marker_des: ''
       },
-    }
+    };
+
+    this._handleModify = this._handleModify.bind(this);
+    this._handleDelete = this._handleDelete.bind(this);
   }
 
   _handleOnSubmit(e) {
@@ -41,24 +44,26 @@ export default class ModalLocInfo extends Component {
       this.props.handleMarkersData(data);
     } else if( type === 'cancle' ) {
       this.props.handleToggleModal();
+    } else if( type === 'modify' ) {
+      this.props.handleMarkersData(data, true);
     }
   }
 
   _renderInfo() {
 
-    if( this.state.isModified ) {
+    if( !this.state.isModified ) {
       return (
         <div>
           <div className="modify-locname-area">
-            <label>장소</label>
+            <label>제목</label>
             <input 
               type="text"
-              value={this.state.markerInfo.marker_name}
-              onChange={ (e) => {this._handleOnChage('marker_name', e)} }
+              value={this.state.markerInfo.marker_tit}
+              onChange={ (e) => {this._handleOnChage('marker_tit', e)} }
               />
           </div>
           <div className="modify-des-area">
-            <label>설명</label>
+            <label>내용</label>
             <textarea 
               value={this.state.markerInfo.marker_des}
               onChange={ (e) => {this._handleOnChage('marker_des', e)} }
@@ -68,27 +73,82 @@ export default class ModalLocInfo extends Component {
       );
     } else {
       return (
-        <span className="location_name">{this.state.markerInfo.location_name}</span>
+        <div className="info-loc-details">
+          <div className="details-tit">
+            <p>{this.state.markerInfo.marker_tit}</p>
+          </div>
+          <div className="details-des">
+            <p>{this.state.markerInfo.marker_des}</p>
+          </div>
+        </div>
+      );
+    }
+  }
+
+  _handleModify = () => {
+    this.setState({
+      isModified: !this.state.isModified
+    });
+  }
+  _handleDelete = () => {
+    const {position} = this.state.markerInfo;
+
+    this.props.handleDeleteMarker(position);
+  }
+
+  _renderBtns = () => {
+    if( !this.state.isModified ) {
+      return (
+        <div className="modal-info-btns">
+          <button 
+            type="button"
+            onClick={() => {
+              if( this.state.markerInfo.isSaved ) {
+                console.log('수정하기');
+                this._handleOnClick('modify');
+              } else {
+                this._handleOnClick('save');
+              }
+            }}
+            >저장</button>
+          <button 
+            type="button"
+            onClick={() => {this._handleOnClick('cancle')}}
+            >취소</button>
+        </div>
+      );
+    } else {
+      return (
+        <div className="modal-info-btns">
+          <button 
+            type="button"
+            onClick={() => {this._handleOnClick('cancle')}}
+            >확인</button>
+        </div>
       );
     }
   }
 
   _initState = () => {
     const _marker_info = Object.assign({}, this.props.markerInfo);
-    let _isModified = false;
-
-    if( !_marker_info.isSaved ) {
-      console.log('저장된 marker 정보가 아닐 때');
-      _isModified = true;
-    }
 
     this.setState({
-      isModified: _isModified,
+      isModified: _marker_info.isSaved,
       markerInfo: _marker_info
     });
   }
   componentDidMount = () => {
     this._initState();
+  }
+  
+  componentWillReceiveProps = (nextProps) => {
+    const _markerInfo = Object.assign({}, nextProps.markerInfo);
+    
+    console.log('ModalLocInfo _markerInfo: ', _markerInfo);
+    this.setState({
+      isModified: _markerInfo.isSaved,
+      markerInfo: _markerInfo
+    });
   }
   
   
@@ -98,24 +158,21 @@ export default class ModalLocInfo extends Component {
         <div className="modal-info-inner">
           <div className="modal-info-settings">
             <button type="button">Settings</button>
-            <ModalLocInfoSettings />
+            <ModalLocInfoSettings 
+              handleModify={this._handleModify}
+              handleDelete={this._handleDelete}
+            />
           </div>
           <form 
             className="modal-info-form"
             onClick={(e) => this._handleOnSubmit(e)}>
             <fieldset>
               <legend>위치에 대한 정보 입력창</legend>
-              {this._renderInfo()}
-              <div className="modal-info-btns">
-                <button 
-                  type="button"
-                  onClick={() => {this._handleOnClick('save')}}
-                  >저장</button>
-                <button 
-                  type="button"
-                  onClick={() => {this._handleOnClick('cancle')}}
-                  >취소</button>
+              <div className="info-loc">
+                <p>{this.state.markerInfo.marker_addr}</p>
               </div>
+              {this._renderInfo()}
+              {this._renderBtns()}
             </fieldset>
           </form>
         </div>
@@ -127,5 +184,6 @@ export default class ModalLocInfo extends Component {
 ModalLocInfo.propTypes = {
   markerInfo: PropTypes.object.isRequired,
   handleMarkersData: PropTypes.func.isRequired,
+  handleDeleteMarker: PropTypes.func.isRequired,
   handleToggleModal: PropTypes.func.isRequired
 };
