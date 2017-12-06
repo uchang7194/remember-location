@@ -356,8 +356,8 @@ export default class Map extends Component {
     if( JSON.stringify(this.props.currentPosition) !== `{}` && prevProps.currentPosition !== this.props.currentPosition ) {
       this._moveTo(this.props.currentPosition);
     }
-    // console.log(window.innerHeight);
-    // this.refs.map.style.height = window.innerHeight - 45 + 'px';
+    console.log(window.innerHeight);
+    this.refs.map.style.height = window.innerHeight - 45 + 'px';
   }
   
   render() {

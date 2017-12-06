@@ -38,33 +38,50 @@ export default class ModalLocInfo extends Component {
   _handleOnClick = (type) => {
     const data = Object.assign({}, this.state.markerInfo);
 
-  
     if( type === 'save' ) {
       data.isSaved = true;
       this.props.handleMarkersData(data);
     } else if( type === 'cancle' ) {
+      if( this.state.markerInfo.isSaved ) {
+        this.setState({
+          isModified: true
+        });
+      } else {
+        this.props.handleToggleModal();
+      }
+    } else if ( type === 'confirm' ) {
       this.props.handleToggleModal();
     } else if( type === 'modify' ) {
       this.props.handleMarkersData(data, true);
     }
   }
 
+  _renderDescription = () => {
+    return this.state.markerInfo.marker_des.split('\n').map( (data, index) => {
+      return (
+        <p key={index}>{data}</p>
+      );
+    });
+  }
+
   _renderInfo() {
 
     if( !this.state.isModified ) {
       return (
-        <div>
-          <div className="modify-locname-area">
-            <label>제목</label>
-            <input 
-              type="text"
-              value={this.state.markerInfo.marker_tit}
-              onChange={ (e) => {this._handleOnChage('marker_tit', e)} }
-              />
+        <div className="modify-loc-details">
+          <div className="modify-tit-area">
+            <label>
+              <input 
+                type="text"
+                placeholder="제목을 입력해주세요."
+                value={this.state.markerInfo.marker_tit}
+                onChange={ (e) => {this._handleOnChage('marker_tit', e)} }
+                />
+            </label>
           </div>
           <div className="modify-des-area">
-            <label>내용</label>
             <textarea 
+              placeholder="내용을 입력해주세요."
               value={this.state.markerInfo.marker_des}
               onChange={ (e) => {this._handleOnChage('marker_des', e)} }
               />
@@ -75,10 +92,13 @@ export default class ModalLocInfo extends Component {
       return (
         <div className="info-loc-details">
           <div className="details-tit">
-            <p>{this.state.markerInfo.marker_tit}</p>
+            <p><span>제목:</span> {this.state.markerInfo.marker_tit}</p>
           </div>
           <div className="details-des">
-            <p>{this.state.markerInfo.marker_des}</p>
+            <span>내용:</span>
+            <div>
+              {this._renderDescription()}
+            </div>
           </div>
         </div>
       );
@@ -100,7 +120,8 @@ export default class ModalLocInfo extends Component {
     if( !this.state.isModified ) {
       return (
         <div className="modal-info-btns">
-          <button 
+          <button
+            className="modify" 
             type="button"
             onClick={() => {
               if( this.state.markerInfo.isSaved ) {
@@ -113,6 +134,7 @@ export default class ModalLocInfo extends Component {
             >저장</button>
           <button 
             type="button"
+            className="cancle"
             onClick={() => {this._handleOnClick('cancle')}}
             >취소</button>
         </div>
@@ -120,9 +142,10 @@ export default class ModalLocInfo extends Component {
     } else {
       return (
         <div className="modal-info-btns">
-          <button 
+          <button
+            className="submit" 
             type="button"
-            onClick={() => {this._handleOnClick('cancle')}}
+            onClick={() => {this._handleOnClick('confirm')}}
             >확인</button>
         </div>
       );
@@ -153,16 +176,17 @@ export default class ModalLocInfo extends Component {
   
   
   render() {
+    
     return (
       <div className="modal-info">
         <div className="modal-info-inner">
-          <div className="modal-info-settings">
+          { this.state.isModified ? <div className="modal-info-settings">
             <button type="button">Settings</button>
             <ModalLocInfoSettings 
               handleModify={this._handleModify}
               handleDelete={this._handleDelete}
             />
-          </div>
+          </div> : ''}
           <form 
             className="modal-info-form"
             onClick={(e) => this._handleOnSubmit(e)}>
