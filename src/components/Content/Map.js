@@ -25,6 +25,7 @@ export default class Map extends Component {
     this.COMMON_URL = '/rememberLocation/';
     this.URL = '';
     this.markers = [];
+    this.markerCluster = null;
     // Bound
     this._handleToggleActivedModal = this._handleToggleActivedModal.bind(this);
     this._handleMarkersData = this._handleMarkersData.bind(this);
@@ -33,11 +34,14 @@ export default class Map extends Component {
   _initMap = () => {
     const google = window.google;
     this.map = new google.maps.Map(document.getElementById('map'), {
-      center: {lat: 35.90775699999999, lng: 127.76692200000002
+      center: {
+        lat: 35.90775699999999, 
+        lng: 127.76692200000002
       },
       zoom: 7
     });
-
+    this.markerCluster = new window.MarkerClusterer(this.map, null,
+      {imagePath: 'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m'});      
     this._initSearch(google, this.map);
     this._initInfoWindow(google, this.map);
     // this._handleAddEvent(map, 'click', this._callbackMapTest);
@@ -129,6 +133,9 @@ export default class Map extends Component {
 
     // 마커 추가
     this.markers.push(marker);
+
+    // 클러스터 추가
+    this.markerCluster.addMarker(marker);
     
   }
   _markerOnClick = (marker) => {
@@ -160,6 +167,9 @@ export default class Map extends Component {
       this.setState({
         activedModal: true,
         clickedMarkerInfo: copy_marker_info
+      }, () => {
+        this.map.panTo(position);
+        this.map.setZoom(15);
       });
     });
   }
@@ -388,7 +398,9 @@ export default class Map extends Component {
     delete_data.forEach( data => {
       this.markers.splice(data, 1);
     });
-
+    // this.markerCluster = null;
+    this.markerCluster.clearMarkers();
+    this.markerCluster.addMarkers(this.markers);
     console.log('next this.markers: ', this.markers);
   }
 
@@ -412,7 +424,8 @@ export default class Map extends Component {
       userInfo: {
         name: _user_info.name,
         email: _user_info.email
-      }
+      },
+      markersData: '[]'
     };
     var updates = {};
     updates[URL + '/' + KEY] = INIT_MARKER_DATA;
@@ -447,10 +460,13 @@ export default class Map extends Component {
       //    - false : userData를 추가시켜줌.
       const _snapshot = snapshot.val(),
             _existData = this._findFirebaseData(_snapshot, user_info.auth.userID);
-
+      console.log('_snapshot: ', _snapshot);
       if( _existData === null ) {
         this.URL = this.COMMON_URL + KEY;
         this._initFirebaseData(user_info, URL, KEY);
+        this.setState({
+          isLoading: !this.state.isLoading
+        });
       } else {
         this.setState({
           isLoading: !this.state.isLoading,
@@ -461,6 +477,8 @@ export default class Map extends Component {
           this.state.markersData.forEach(data => {
             this._addMarker(data.position, data.marker_addr, data.marker_tit, data.marker_des, data.isSaved, false);
           });
+          
+          this.markerCluster.addMarkers(this.markers);
         });
       }
     });
@@ -484,6 +502,12 @@ export default class Map extends Component {
         markersData: _markersData
       }, () => {
         this._clearMarkers();
+        this.markerCluster.clearMarkers();
+        this.map.panTo({
+          lat: 35.90775699999999, 
+          lng: 127.76692200000002
+        });
+        this.map.setZoom(7);
       });
     }
   }
