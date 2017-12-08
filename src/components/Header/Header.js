@@ -1,14 +1,14 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
-
 export default class Header extends Component {
 
   constructor(props) {
     super(props);
 
     this.state = {
-      
+      is_logged_in: false,
+      user_info: {}
     };
 
     this._handleFacebookLogin = this._handleFacebookLogin.bind(this);
@@ -18,10 +18,10 @@ export default class Header extends Component {
   }
 
   _handleFacebookStatusChange = (response) => {
-    console.log('status: ', response);
     let user_info = {};
 
     if( !this.state.is_logged_in && response.status === 'connected' ) {
+
       user_info.auth = response.authResponse;  
       window.FB.api('/me', {fields: 'email, name, picture'}, (response) => {
 
@@ -29,7 +29,15 @@ export default class Header extends Component {
         user_info.name = response.name;
         user_info.picture = response.picture.data.url;
 
-        this.props.setUserInfo(user_info);
+        this.setState({
+          is_logged_in: !this.state.is_logged_in,
+          user_info
+        }, () => {
+          const _user_info = Object.assign({}, this.state.user_info);
+          console.log('_user_info: ', _user_info);
+          this.props.setUserInfo(_user_info);
+        });
+        
       });
 
       this.props.clickedLog();
@@ -54,27 +62,27 @@ export default class Header extends Component {
   _handleFacebookLogout = () => {
     window.FB.logout((response) => {
 
-      const user_info = {
-        auth: {},
-        picture: '',
-        name: '',
-        email: ''
-      }
-      this.props.clickedLog();
-      this.props.setUserInfo(user_info);
-    
+      const user_info = {};
+
+      this.setState({
+        is_logged_in: !this.state.is_logged_in,
+        user_info
+      }, () => {
+        this.props.clickedLog();
+        this.props.setUserInfo({});
+      });
     });
   }
   _renderedUserInfo = () => {
-    let is_logged_in = this.props.isLoggedIn;
+    let is_logged_in = this.state.is_logged_in;
 
     if( is_logged_in ) {
       return (
         <a className="user-info" href="#">
           <div>
-            <img src={this.props.user_info.picture} alt="유저 사진" />
+            <img src={this.state.user_info.picture} alt="유저 사진" />
           </div>
-          <span>{this.props.user_info.name}</span>
+          <span>{this.state.user_info.name}</span>
         </a>  
       );
     } else {
@@ -82,7 +90,7 @@ export default class Header extends Component {
     }
   }
   _renderedloggedBtn = () => {
-    let is_logged_in = this.props.isLoggedIn;
+    let is_logged_in = this.state.is_logged_in;
 
     if( !is_logged_in ) {
       return (
@@ -147,6 +155,5 @@ export default class Header extends Component {
 
 Header.propTypes = {
   clickedLog: PropTypes.func.isRequired,
-  setUserInfo: PropTypes.func.isRequired,
-  isLoggedIn: PropTypes.bool.isRequired
+  setUserInfo: PropTypes.func.isRequired
 }

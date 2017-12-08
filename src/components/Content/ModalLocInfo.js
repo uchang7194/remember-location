@@ -165,12 +165,11 @@ export default class ModalLocInfo extends Component {
   }
   
   componentWillReceiveProps = (nextProps) => {
-    const _markerInfo = Object.assign({}, nextProps.markerInfo);
+    const _marker_info = Object.assign({}, nextProps.markerInfo);
     
-    console.log('ModalLocInfo _markerInfo: ', _markerInfo);
     this.setState({
-      isModified: _markerInfo.isSaved,
-      markerInfo: _markerInfo
+      isModified: _marker_info.isSaved,
+      markerInfo: _marker_info
     });
   }
   
@@ -180,13 +179,11 @@ export default class ModalLocInfo extends Component {
     return (
       <div className="modal-info">
         <div className="modal-info-inner">
-          { this.state.isModified ? <div className="modal-info-settings">
-            <button type="button">Settings</button>
+          { this.state.isModified ?
             <ModalLocInfoSettings 
               handleModify={this._handleModify}
               handleDelete={this._handleDelete}
-            />
-          </div> : ''}
+            /> : ''}
           <form 
             className="modal-info-form"
             onClick={(e) => this._handleOnSubmit(e)}>

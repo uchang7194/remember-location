@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import { database, storage, auth } from '../firebase/';
 
 import Header from './Header/Header';
 import Content from './Content/';
@@ -12,12 +13,7 @@ class App extends Component {
 
     this.state = {
       is_logged_in: false,
-      user_info: {
-        auth: {},
-        picture: '',
-        name: '',
-        email: ''
-      }
+      user_info: {}
     }
     this._handleClickedLog = this._handleClickedLog.bind(this);
     this._handleUserInfo = this._handleUserInfo.bind(this);
@@ -29,9 +25,9 @@ class App extends Component {
       is_logged_in: !this.state.is_logged_in
     });
   }
-  _handleUserInfo(user_info) {
+  _handleUserInfo(_user_info) {
     this.setState({
-      user_info
+      user_info: _user_info
     })
   }
 
@@ -41,10 +37,12 @@ class App extends Component {
         <Header 
           clickedLog={this._handleClickedLog}
           setUserInfo={this._handleUserInfo}
-          isLoggedIn={this.state.is_logged_in}
-          user_info={this.state.user_info}
+          
         />
-        <Content />
+        <Content 
+          isLoggedIn={this.state.is_logged_in}
+          userInfo={this.state.user_info}
+          />
       </div>
     );
   }

@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
+import { database } from '../../firebase/';
 
 import ModalLocInfo from './ModalLocInfo';
 
@@ -11,14 +12,19 @@ export default class Map extends Component {
     this.state = {
       activedModal: false,
       clickedMarkerInfo: {},
+      current_coords: {},
+      userInfo: {},
       markersData: [],
-      markers: []
+      browser_height: 0,
+      isLoading: false,
     }
     // Global values
     this.map = null;
     this.current_marker = null;
     this.info_window = null;
-
+    this.COMMON_URL = '/rememberLocation/';
+    this.URL = '';
+    this.markers = [];
     // Bound
     this._handleToggleActivedModal = this._handleToggleActivedModal.bind(this);
     this._handleMarkersData = this._handleMarkersData.bind(this);
@@ -68,7 +74,20 @@ export default class Map extends Component {
 
     this.info_window = _info_window;
   }
-  
+  _handleResizeMap = () => {
+    let _map = null;
+    const _browser_height = window.innerHeight;
+
+    if( _browser_height !== this.state.browser_height ) {
+      _map = this.refs.map;
+
+      _map.style.height = (_browser_height - 45) + 'px';
+
+      this.setState({
+        browser_height: _browser_height
+      });
+    }
+  }
   _moveTo = (position, marker_addr) => {
 
     // if( this._isContainedLocData(position) ) {
@@ -79,14 +98,13 @@ export default class Map extends Component {
     this.map.setZoom(15);
     this._addMarker(position, marker_addr);
   }
-  _addMarker = (position, marker_addr = '', marker_tit = '' , marker_des = '', isSaved = false) => {
+  _addMarker = (position, marker_addr = '', marker_tit = '' , marker_des = '', isSaved = false, isContainedMarkerChk = true) => {
     const google_map = window.google.maps;
-    let copy_marker = this.state.markers.slice();
     let marker = null;
 
 
     console.log('this._isContainedMarker(position): ', this._isContainedMarker(position));
-    if( this._isContainedMarker(position).length !== 0 ) {
+    if( isContainedMarkerChk && this._isContainedMarker(position).length !== 0 ) {
       alert('이미 등록되어 있는 장소입니다.');
       return;
     }
@@ -99,7 +117,7 @@ export default class Map extends Component {
     marker = new google_map.Marker({
       position: position,
       map: this.map,
-      index: this.state.markers.length,
+      index: this.markers.length,
       isSaved,
       marker_addr,
       marker_tit,
@@ -110,13 +128,17 @@ export default class Map extends Component {
     this._markerOnClick(marker);
 
     // 마커 추가
-    copy_marker.push(marker);
-    this.setState({
-      markers: copy_marker
-    });
+    this.markers.push(marker);
+    
   }
   _markerOnClick = (marker) => {
     marker.addListener('click', () => {
+
+      if( !this.props.isLoggedIn ) {
+        alert('로그인 후 사용하실 수 있습니다.');
+        return;
+      }
+
       let copy_marker_info = Object.assign({}, this.state.clickedMarkerInfo);
       const position = this._getPosition(marker.position),
             marker_addr = marker.marker_addr,
@@ -181,8 +203,7 @@ export default class Map extends Component {
     return _marker;
   }
   _clearMarkers = () => {
-    const _markers = this.state.markers,
-          length = _markers.length;
+    const _markers = this.markers, length = _markers.length;
     let i = 0;
 
     for( ; i < length; i++) {
@@ -190,10 +211,7 @@ export default class Map extends Component {
         _markers[i].setMap(null);
       }
     }
-
-    this.setState({
-      markers: []
-    })
+    this.markers = [];
   }
   
   _handleMarkersData = (data, is_modified = false) => {
@@ -202,7 +220,6 @@ export default class Map extends Component {
       return;
     }
     let copy_markers_data = this.state.markersData.slice();
-    let _markers = this.state.markers.slice();
 
 
     if( !is_modified ) {
@@ -226,7 +243,7 @@ export default class Map extends Component {
     for(let prop in data) {
       if( data.hasOwnProperty(prop) ) {
         if( prop !== `position` ) {
-          _markers[_markers.length-1][prop] = data[prop];
+          this.markers[this.markers.length-1][prop] = data[prop];
         }
       }
     }
@@ -234,25 +251,30 @@ export default class Map extends Component {
 
     this.setState({
       clickedMarkerInfo: data,
-      markersData: copy_markers_data,
-      markers: _markers
+      markersData: copy_markers_data
     }, () => {
+      
       this._renderMarkers();
+      if( this.props.isLoggedIn ) {
+        const _markersData = this.state.markersData.slice();
+
+        this._setFirebaseData('markersData', _markersData);
+      }
     });
   }
+  
   _handleDeleteMarker = (position) => {
 
     if( !window.confirm('삭제하시겠습니까?') ) {
       return;
     }
 
-    let _markers = this.state.markers.slice(),
-        _markersData = this.state.markersData.slice();
+    let _markersData = this.state.markersData.slice();
     
     
     
     // 1. _renderedMarkers를 위한 isSaved 변수를 false로 바꿔줌.
-    _markers = _markers.map(data => {
+    this.markers = this.markers.map(data => {
       const _lat = data.position.lat(),
             _lng = data.position.lng();
 
@@ -284,10 +306,14 @@ export default class Map extends Component {
     });
     this.setState({
       activedModal: false,
-      markers: _markers,
       markersData: _markersData
     }, () => {
       this._renderMarkers();
+      if( this.props.isLoggedIn ) {
+        const _markersData = this.state.markersData.slice();
+
+        this._setFirebaseData('markersData', _markersData);
+      }
     });
   }
   _handleToggleActivedModal = () => {
@@ -296,6 +322,40 @@ export default class Map extends Component {
     }, () => {
       this._renderMarkers();
     });
+  }
+  // geolocation으로 좌표값 구하기
+
+  _handleGeoLocation = () => {
+    const geolocation = navigator.geolocation;
+
+    if( geolocation ) {
+      geolocation.getCurrentPosition((position) => {
+        this._handleSuccessGeoLoc(position);
+      }, this._handleErrorGeoLoc);
+    }
+  }
+  _handleSuccessGeoLoc = (position) => {
+    /*
+      coords
+        - latitude
+        - longitude
+    */ 
+    let lat = position.coords.latitude,
+        lng = position.coords.longitude;
+
+    console.log('lat: ', lat);
+    console.log('lng: ', lng);
+    this.setState({
+      current_coords: {
+        lat,
+        lng
+      }
+    }, () => {
+      this._moveTo(this.state.current_coords);
+    });
+  }
+  _handleErrorGeoLoc = () => {
+    alert('위치 권한을 허용해주세요.');
   }
   _renderModal = () => {
     if( this.state.activedModal ) {
@@ -310,16 +370,14 @@ export default class Map extends Component {
     }
   }
   _renderMarkers = () => {
-    const _markers = this.state.markers.slice();
     let delete_data = [];
 
-    console.log('prev _markers: ', _markers);
 
-    if( _markers.length === 0 ) { return; }
+    if( this.markers.length === 0 ) { return; }
 
     // this._clearMarkers();
 
-    _markers.forEach( (data, index) => {
+    this.markers.forEach( (data, index) => {
       
       if( !data.isSaved ) {
         data.setMap(null);
@@ -328,55 +386,145 @@ export default class Map extends Component {
     });
 
     delete_data.forEach( data => {
-      _markers.splice(data, 1);
+      this.markers.splice(data, 1);
     });
 
-    console.log('next _markers: ', _markers);
-    if( this.state.markers.length !== _markers.length ) {
-      this.setState({
-        markers: _markers
-      })
-    }
+    console.log('next this.markers: ', this.markers);
   }
-  componentDidUpdate = (prevProps, prevState) => {
-    console.log('componentDidUpdate');
-    
-  }
+
   
-  componentWillUpdate = (nextProps, nextState) => {
-    console.log('componentWillUpdate');
-    
-  }
+
   componentDidMount() {
     this._initMap();
+    this._handleResizeMap();
+    window.addEventListener('resize', this._handleResizeMap);
+  }
+
+  _setFirebaseData = (_url, data) => {
+    const URL = this.URL + '/' + _url;
+
+    database.ref(URL).set(JSON.stringify(data));
+  }
+  _initFirebaseData = (_user_info, URL, KEY) => {
+    const INIT_MARKER_DATA = {
+      uid: _user_info.auth.userID,
+      key: KEY,
+      userInfo: {
+        name: _user_info.name,
+        email: _user_info.email
+      }
+    };
+    var updates = {};
+    updates[URL + '/' + KEY] = INIT_MARKER_DATA;
     
+    database.ref().update(updates);
   }
-  
-  componentDidUpdate = (prevProps, prevState) => {
-    if( JSON.stringify(this.props.currentPosition) !== `{}` && prevProps.currentPosition !== this.props.currentPosition ) {
-      this._moveTo(this.props.currentPosition);
+  _findFirebaseData = (data, _uid) => {
+
+    console.log('_uid: ', _uid);
+    for(let prop in data) {
+      if( data.hasOwnProperty(prop) ) {
+        console.log('data[prop]', data[prop]);
+        if( data[prop].uid === _uid ) {
+          return data[prop];
+        }
+      }
     }
-    console.log(window.innerHeight);
-    this.refs.map.style.height = window.innerHeight - 45 + 'px';
+
+    return null;
+  }
+  _fetchData = (user_info) => {
+    console.log('_fetchData user_info: ', user_info)
+    // firebase
+    const URL = '/rememberLocation',
+          KEY = database.ref().child(URL).push().key;
+    let checkUserData = database.ref(URL);
+
+    checkUserData.once('value', (snapshot) => {
+      // 1. 데이터를 전부 받아옴.
+      // 2. 받아온 데이터에서 userId의 값을 비교
+      //    - true : 해당 user의 데이터를 state에 적용시켜줌.
+      //    - false : userData를 추가시켜줌.
+      const _snapshot = snapshot.val(),
+            _existData = this._findFirebaseData(_snapshot, user_info.auth.userID);
+
+      if( _existData === null ) {
+        this.URL = this.COMMON_URL + KEY;
+        this._initFirebaseData(user_info, URL, KEY);
+      } else {
+        this.setState({
+          isLoading: !this.state.isLoading,
+          markersData: JSON.parse(_existData.markersData)
+        }, () => {
+          this.URL = this.COMMON_URL + _existData.key;
+          
+          this.state.markersData.forEach(data => {
+            this._addMarker(data.position, data.marker_addr, data.marker_tit, data.marker_des, data.isSaved, false);
+          });
+        });
+      }
+    });
   }
   
+  componentWillReceiveProps = (nextProps) => {
+    // this._initFirebaseData(nextProps);
+    const user_info = nextProps.userInfo;
+
+    console.log('componentWillReceiveProps');
+    if( nextProps.isLoggedIn && JSON.stringify(user_info) !== '{}' ) {
+      this.setState({
+        isLoading: !this.state.isLoading
+      }, () => {
+        this._fetchData(user_info);
+      });
+    } else {
+      const _markersData = [];
+
+      this.setState({
+        markersData: _markersData
+      }, () => {
+        this._clearMarkers();
+      });
+    }
+  }
+  
+  
+  _renderLoading = () => {
+    if( this.state.isLoading ) {
+      return (
+        <div className="content-loading">
+          Loading...
+        </div>   
+      );
+    }
+  }
   render() {
   
     return (
       <div className="content-map">
-        <div id="map" ref="map">
-          <input 
-            ref="searchAddr"
-            type="text"
-            id="search-addr"
-            placeholder="주소를 입력해주세요."></input>
+        <div>
+          <div id="map" ref="map">
+            <input 
+              ref="searchAddr"
+              type="text"
+              id="search-addr"
+              placeholder="주소를 입력해주세요."></input>
+          </div>
+          <div className="content-utils-box">
+            <button 
+              type="button"
+              onClick={() => { this._handleGeoLocation(); }}
+              >위치</button>
+          </div>
+          {this._renderModal()}
         </div>
-        {this._renderModal()}
+        {this._renderLoading()}
       </div>
     )
   }
 }
 
 Map.propTypes = {
-  currentPosition: PropTypes.object.isRequired
+  isLoggedIn: PropTypes.bool.isRequired,
+  userInfo: PropTypes.object.isRequired
 }

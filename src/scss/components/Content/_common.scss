@@ -22,5 +22,14 @@
 }
 
 .content-map {
-  padding-top: $content-margin-top;
+  // padding-top: $content-margin-top;
+}
+.content-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10010;
+  background: #fff;
 }
