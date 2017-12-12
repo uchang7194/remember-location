@@ -1,0 +1,34 @@
+.content-utils-box {
+  position: absolute;
+  top: 60px;
+  z-index: 9998;
+
+  button[type="button"] {
+    $location-btn-size: 40px;
+
+    width: $location-btn-size;
+    height: $location-btn-size;
+    margin-left: 10px;
+    background: $default-color;
+    color: #fff;
+    cursor: pointer;
+    border-radius: 50%;
+    border: 2px solid #ddd;
+  }
+}
+
+@include mobile {
+  .content-utils-box {
+    right: $margin-gutter;
+  }
+}
+@include tablet {
+  .content-utils-box {
+    right: $margin-gutter * 2;
+  }
+}
+@include desktop {
+  .content-utils-box {
+    right: $margin-gutter * 5;
+  }
+}

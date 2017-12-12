@@ -1,0 +1,42 @@
+.header-logged-box {
+  $logged-box-size: 27px;
+  margin-top: 8px;
+  float: right;
+  @include clearfix;
+
+  & > * {
+    float: left;
+  }
+  .user-info {
+    @include clearfix;
+    display: block;
+    & > * {
+      float: left;
+      margin-right: 5px;
+    }
+    div {
+      width: $logged-box-size;
+      height: $logged-box-size;
+      border-radius: 50%;
+      overflow: hidden;
+    }
+    img {
+      width: 100%;
+      height: auto;
+    }
+    span {
+      display: block;
+      line-height: $logged-box-size;
+      font-size: 1.6rem;
+      font-weight: bold;
+    }
+  }
+  button[type="button"] {
+    @extend %btn-style;
+    margin-top: 2px;
+    margin-left: 10px;
+    background: $default-color;
+    color: #fff;
+    
+  }
+}

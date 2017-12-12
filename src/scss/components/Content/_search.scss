@@ -1,5 +1,27 @@
 #search-addr {
-  margin-top: 10px;
+  margin-top: $margin-gutter;
   padding: 10.5px 0 10.5px 10px;
-  border: 0 none;
+  box-sizing: border-box;
+  border: 2px solid #ddd;
+}
+
+@include mobile {
+  #search-addr {
+    width: calc(100% - #{$margin-gutter * 2});
+    margin-left: $margin-gutter;
+  }
+}
+
+@include tablet {
+  #search-addr {
+    width: calc(100% - #{$margin-gutter * 4});
+    margin-left: $margin-gutter * 2;
+  }
+}
+
+@include desktop {
+  #search-addr {
+    width: calc(100% - #{$margin-gutter * 10});
+    margin-left: $margin-gutter * 5;
+  }
 }

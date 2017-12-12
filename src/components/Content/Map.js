@@ -21,7 +21,7 @@ export default class Map extends Component {
     // Global values
     this.map = null;
     this.current_marker = null;
-    this.info_window = null;
+    this.infoWindow = null;
     this.COMMON_URL = '/rememberLocation/';
     this.URL = '';
     this.markers = [];
@@ -50,12 +50,16 @@ export default class Map extends Component {
         lat: 35.90775699999999, 
         lng: 127.76692200000002
       },
-      zoom: 7
+      zoom: 7,
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: false
     });
     this.markerCluster = new window.MarkerClusterer(this.map, null,
       {imagePath: 'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m'});      
     this._initSearch(google, this.map);
     this._initInfoWindow(google, this.map);
+    this._initInfoWindow();
     // this._handleAddEvent(map, 'click', this._callbackMapTest);
   }
   /**
@@ -90,9 +94,7 @@ export default class Map extends Component {
   }
   _initInfoWindow = (google, map) => {
     
-    let _info_window = new google.maps.InfoWindow();
-
-    this.info_window = _info_window;
+    this.infoWindow = new window.google.maps.InfoWindow();
   }
   /**
    * @method _handleResizeMap
@@ -146,7 +148,23 @@ export default class Map extends Component {
    */ 
   _addMarker = (position, marker_addr = '', marker_tit = '' , marker_des = '', isSaved = false, isContainedMarkerChk = true) => {
     const google_map = window.google.maps;
-    let marker = null;
+    let marker = null, infoWindow = null,
+        saved_infoWindow = `
+        <div class="infowindow">
+          <figure>
+            <figcaption>${marker_tit}</figcaption>
+          </figure>
+          <div>
+            <button class="infoWindow-btn-modify" data-index=${this.markers.length} type="button">확인</button>
+          </div>
+        </div>`,
+        not_saved_infoWindow = `
+        <div class="infowindow">
+          <div>
+            <button class="infoWindow-btn-add" data-index=${this.markers.length} type="button">추가</button>
+          </div>
+        </div>
+        `;
 
 
     console.log('this._isContainedMarker(position): ', this._isContainedMarker(position));
@@ -167,15 +185,33 @@ export default class Map extends Component {
       isSaved,
       marker_addr,
       marker_tit,
-      marker_des
+      marker_des,
+      title: marker_tit
     });
 
     // 이벤트 추가
-    this._markerOnClick(marker);
+    // this._markerOnClick(marker);
 
     // 마커 추가
     this.markers.push(marker);
 
+    // infoWindow 추가
+    if( isSaved ) {
+      // 저장된 마커일 때
+      infoWindow = new window.google.maps.InfoWindow({
+        content: saved_infoWindow
+      });
+      
+    } else {
+      // 저장되지 않은 마커일 때
+      infoWindow = new window.google.maps.InfoWindow({
+        content: not_saved_infoWindow
+      });
+    }
+  
+    marker.addListener('click', () => {
+      infoWindow.open(this.map, marker);
+    });
     // 클러스터 추가
     this.markerCluster.addMarker(marker);
     
@@ -187,38 +223,36 @@ export default class Map extends Component {
    * @param marker 마커 객체 Object
    */ 
   _markerOnClick = (marker) => {
-    marker.addListener('click', () => {
 
-      if( !this.props.isLoggedIn ) {
-        alert('로그인 후 사용하실 수 있습니다.');
-        return;
-      }
+    if( !this.props.isLoggedIn ) {
+      alert('로그인 후 사용하실 수 있습니다.');
+      return;
+    }
 
-      let copy_marker_info = Object.assign({}, this.state.clickedMarkerInfo);
-      const position = this._getPosition(marker.position),
-            marker_addr = marker.marker_addr,
-            marker_tit = marker.marker_tit,
-            marker_des = marker.marker_des,
-            isSaved = marker.isSaved,
-            idx = marker.index;
+    let copy_marker_info = Object.assign({}, this.state.clickedMarkerInfo);
+    const position = this._getPosition(marker.position),
+          marker_addr = marker.marker_addr,
+          marker_tit = marker.marker_tit,
+          marker_des = marker.marker_des,
+          isSaved = marker.isSaved,
+          idx = marker.index;
 
-      copy_marker_info = {
-        marker_addr,
-        marker_tit,
-        marker_des,
-        position,
-        isSaved,
-        idx
-      };
-      
-      console.log('marker clicked: ', copy_marker_info);
-      this.setState({
-        activedModal: true,
-        clickedMarkerInfo: copy_marker_info
-      }, () => {
-        this.map.panTo(position);
-        this.map.setZoom(15);
-      });
+    copy_marker_info = {
+      marker_addr,
+      marker_tit,
+      marker_des,
+      position,
+      isSaved,
+      idx
+    };
+    
+    console.log('marker clicked: ', copy_marker_info);
+    this.setState({
+      activedModal: true,
+      clickedMarkerInfo: copy_marker_info
+    }, () => {
+      this.map.panTo(position);
+      this.map.setZoom(15);
     });
   }
   /**
@@ -597,24 +631,29 @@ export default class Map extends Component {
    * @description 마커의 isSaved 정보를 기준으로 true면 google map에 표시되게 하고 false면 this.markers와 this.state.markersData에서 지워주는 메서드
    */ 
   _renderMarkers = () => {
-    let delete_data = [];
-
+    let new_markers = [];
 
     if( this.markers.length === 0 ) { return; }
 
     // this._clearMarkers();
 
-    this.markers.forEach( (data, index) => {
+    // 삭제 할 데이터 수집 및 map에서 지워줌.
+    this.markers.forEach( marker => {
       
-      if( !data.isSaved ) {
-        data.setMap(null);
-        delete_data.push(index);
+      marker.setMap(null);
+      if( marker.isSaved ) {
+        console.log(marker);
+        new_markers.push(marker);
       }
     });
 
-    delete_data.forEach( data => {
-      this.markers.splice(data, 1);
+    this.markers = [];
+
+    console.log('new_markers: ', new_markers);
+    new_markers.forEach( marker => {
+      this._addMarker(marker.position, marker.marker_addr, marker.marker_tit , marker.marker_des, marker.isSaved, false);
     });
+
     // this.markerCluster = null;
     this.markerCluster.clearMarkers();
     this.markerCluster.addMarkers(this.markers);
@@ -686,10 +725,27 @@ export default class Map extends Component {
       });
     }
   }
+  _bind = () => {
+    // resize map
+    window.addEventListener('resize', this._handleResizeMap);
+
+    // infoWindow btn event
+    this.refs.map.addEventListener('click', (e) => {
+      const TARGET = e.target,
+            CLASS_NAME = TARGET.className;
+      
+      if( CLASS_NAME === 'infoWindow-btn-modify' || CLASS_NAME === 'infoWindow-btn-add' ) {
+        const TARGET_INDEX = TARGET.getAttribute('data-index');
+        
+        console.log(this.markers[TARGET_INDEX]);
+        this._markerOnClick(this.markers[TARGET_INDEX]);
+      } 
+    });
+  }
   componentDidMount() {
     this._initMap();
     this._handleResizeMap();
-    window.addEventListener('resize', this._handleResizeMap);
+    this._bind();
   }
   render() {
   

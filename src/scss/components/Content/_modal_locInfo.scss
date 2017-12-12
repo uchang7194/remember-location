@@ -1,9 +1,5 @@
 $default-box-color: rgba(75, 75, 75, 0.35);
-%btn-style {
-  padding: 5px 10px;
-  border-radius: 5px;
-  cursor: pointer;
-}
+
 .modal-info {
   position: fixed;
   top: 0;
@@ -107,11 +103,14 @@ $default-box-color: rgba(75, 75, 75, 0.35);
     width: 5rem;
     text-align: center;
   }
+  button[type="button"] {
+    @extend %btn-style;
+  }
   .setting-btns {
     display: none;
     
     button[type="button"] {
-      @extend %btn-style;
+      
       &:hover,
       &:focus {
         background: $default-color;
@@ -148,8 +147,9 @@ $default-box-color: rgba(75, 75, 75, 0.35);
 @include desktop {
   .modal-info {
     padding: 0 $default-padding;
+    
     .modal-info-inner {
-      width: calc(100% - #{$default-padding});
+      width: $modal-max-width;
       padding: #{$default-padding * 2.5} $default-padding;
       box-sizing: border-box;
     }

@@ -1,0 +1,13 @@
+.infowindow {
+  padding: 5px 12px;
+  button[type="button"] {
+
+    width: 100%;
+    @extend %btn-style;
+    border: 2px solid #ddd;
+    &:hover {
+      background: $default-color;
+      color: #fff;
+    }
+  }
+}
