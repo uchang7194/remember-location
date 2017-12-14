@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { database } from '../../firebase/';
 
 import ModalLocInfo from './ModalLocInfo';
+import ModalLocList from './ModalLocList';
 
 export default class Map extends Component {
 
@@ -10,7 +11,8 @@ export default class Map extends Component {
     super(props);
 
     this.state = {
-      activedModal: false,
+      activedMarkerInfoModal: false,
+      activedMarkerListModal: false,
       clickedMarkerInfo: {},
       current_coords: {},
       userInfo: {},
@@ -27,9 +29,11 @@ export default class Map extends Component {
     this.markers = [];
     this.markerCluster = null;
     // Bound
-    this._handleToggleActivedModal = this._handleToggleActivedModal.bind(this);
+    this._handleToggleActivedMarkerInfoModal = this._handleToggleActivedMarkerInfoModal.bind(this);
+    this._handleToggleActivedMarkerListModal = this._handleToggleActivedMarkerListModal.bind(this);
     this._handleMarkersData = this._handleMarkersData.bind(this);
     this._handleDeleteMarker = this._handleDeleteMarker.bind(this);
+    this._moveTo = this._moveTo.bind(this);
   }
 
   
@@ -88,7 +92,7 @@ export default class Map extends Component {
         return;
       }
       
-      this._moveTo(places[0].geometry.location, LOC_VALUE);
+      this._moveAndAddMarker(places[0].geometry.location, LOC_VALUE);
       input.value = '';
     });
   }
@@ -107,7 +111,7 @@ export default class Map extends Component {
     if( _browser_height !== this.state.browser_height ) {
       _map = this.refs.map;
 
-      _map.style.height = (_browser_height - 45) + 'px';
+      _map.style.height = _browser_height + 'px';
 
       this.setState({
         browser_height: _browser_height
@@ -123,10 +127,10 @@ export default class Map extends Component {
    */
   
   /**
-   * @method _moveTo 
+   * @method _moveAndAddMarker 
    * @description marker가 google map에 표시되었을 때 이동하는 메서드
    */ 
-  _moveTo = (position, marker_addr) => {
+  _moveAndAddMarker = (position, marker_addr) => {
 
     // if( this._isContainedLocData(position) ) {
     //   alert('이미 저장되어있습니다.');
@@ -135,6 +139,14 @@ export default class Map extends Component {
     this.map.panTo(position);
     this.map.setZoom(15);
     this._addMarker(position, marker_addr);
+  }
+  /**
+   * @method _moveTo 
+   * @description marker가 google map에 표시되었을 때 이동하는 메서드
+   */ 
+  _moveTo = (position) => {
+    this.map.panTo(position);
+    this.map.setZoom(15);
   }
   /**
    * @method _addMarker
@@ -151,9 +163,7 @@ export default class Map extends Component {
     let marker = null, infoWindow = null,
         saved_infoWindow = `
         <div class="infowindow">
-          <figure>
-            <figcaption>${marker_tit}</figcaption>
-          </figure>
+          <p>${marker_tit}</p>
           <div>
             <button class="infoWindow-btn-modify" data-index=${this.markers.length} type="button">확인</button>
           </div>
@@ -248,7 +258,7 @@ export default class Map extends Component {
     
     console.log('marker clicked: ', copy_marker_info);
     this.setState({
-      activedModal: true,
+      activedMarkerInfoModal: true,
       clickedMarkerInfo: copy_marker_info
     }, () => {
       this.map.panTo(position);
@@ -361,7 +371,7 @@ export default class Map extends Component {
     for(let prop in data) {
       if( data.hasOwnProperty(prop) ) {
         if( prop !== `position` ) {
-          this.markers[this.markers.length-1][prop] = data[prop];
+          this.markers[data.idx][prop] = data[prop];
         }
       }
     }
@@ -428,7 +438,7 @@ export default class Map extends Component {
 
     });
     this.setState({
-      activedModal: false,
+      activedMarkerInfoModal: false,
       markersData: _markersData
     }, () => {
       this._renderMarkers();
@@ -449,14 +459,19 @@ export default class Map extends Component {
    */
   
   /**
-   * @method _handleToggleActivedModal
+   * @method _handleToggleActivedMarkerInfoModal
    * @description ModalLocInfo component를 토글시켜주기 위한 메서드
    */ 
-  _handleToggleActivedModal = () => {
+  _handleToggleActivedMarkerInfoModal = () => {
     this.setState({
-      activedModal: !this.state.activedModal
+      activedMarkerInfoModal: !this.state.activedMarkerInfoModal
     }, () => {
       this._renderMarkers();
+    });
+  }
+  _handleToggleActivedMarkerListModal = () => {
+    this.setState({
+      activedMarkerListModal: !this.state.activedMarkerListModal
     });
   }
   
@@ -502,7 +517,7 @@ export default class Map extends Component {
         lng
       }
     }, () => {
-      this._moveTo(this.state.current_coords);
+      this._moveAndAddMarker(this.state.current_coords);
     });
   }
   /**
@@ -665,14 +680,22 @@ export default class Map extends Component {
    * @description ModalLocInfo component를 렌더해주는 메서드
    */ 
   _renderModal = () => {
-    if( this.state.activedModal ) {
+    if( this.state.activedMarkerInfoModal ) {
       return (
         <ModalLocInfo 
           handleMarkersData={this._handleMarkersData}
           handleDeleteMarker={this._handleDeleteMarker}
-          handleToggleModal={this._handleToggleActivedModal}
+          handleToggleModal={this._handleToggleActivedMarkerInfoModal}
           markerInfo={this.state.clickedMarkerInfo}
           />
+      );
+    } else if ( this.state.activedMarkerListModal ) {
+      return (
+        <ModalLocList 
+          markersData={this.state.markersData}
+          handleToggleModal={this._handleToggleActivedMarkerListModal}
+          moveTo={this._moveTo}
+        />
       );
     }
   }
@@ -762,8 +785,13 @@ export default class Map extends Component {
           <div className="content-utils-box">
             <button 
               type="button"
+              className="list-btn"
+              onClick={() => { this._handleToggleActivedMarkerListModal() }}
+              ><i class="material-icons">&#xE896;</i></button>
+            <button 
+              type="button"
               onClick={() => { this._handleGeoLocation(); }}
-              >위치</button>
+              ><i class="material-icons">&#xE8B4;</i></button>
           </div>
           {this._renderModal()}
         </div>

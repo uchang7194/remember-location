@@ -14,6 +14,12 @@ $desktop: 1026px;
 
 
 // component styles
+// common
+$vertical-pos: 60px;
+$mobile-horizontal-pos: $margin-gutter;
+$tablet-horizontal-pos: $margin-gutter * 2;
+$desktop-horizontal-pos: $margin-gutter * 5;
+$default-box-color: rgba(75, 75, 75, 0.35);
 // search
 $search-max-width: 600px;
 // modal

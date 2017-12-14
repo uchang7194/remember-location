@@ -1,5 +1,9 @@
 .infowindow {
   padding: 5px 12px;
+  p {
+    text-align: center;
+    margin-bottom: $margin-gutter;
+  }
   button[type="button"] {
 
     width: 100%;

@@ -22,7 +22,7 @@ export default class ModalLocInfoSettings extends Component {
           type="button" 
           className="toggle-btn"
           onClick={() => { this._handleOnClick(); }}
-          >Settings</button>
+          ><i class="material-icons">&#xE8B8;</i></button>
         <div className={!this.state.activedSettings ? 'setting-btns' : 'setting-btns active' }>
           <ul>
             <li>

@@ -1,6 +1,6 @@
 .content-utils-box {
   position: absolute;
-  top: 60px;
+  bottom: $vertical-pos * 1.5;
   z-index: 9998;
 
   button[type="button"] {
@@ -19,16 +19,17 @@
 
 @include mobile {
   .content-utils-box {
-    right: $margin-gutter;
+    right: $mobile-horizontal-pos;
+    
   }
 }
 @include tablet {
   .content-utils-box {
-    right: $margin-gutter * 2;
+    right: $tablet-horizontal-pos;
   }
 }
 @include desktop {
   .content-utils-box {
-    right: $margin-gutter * 5;
+    right: $desktop-horizontal-pos;
   }
 }

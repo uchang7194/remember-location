@@ -1,0 +1,85 @@
+.modal-loc-list {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: $default-box-color;
+  z-index: 9998;
+
+  .loc-list-inner {
+    @include centering-pos(all);
+    background: #fff;
+    border-radius: 10px;
+  }
+  ul {
+    width: 100%;
+    padding: $default-padding;
+    box-sizing: border-box;
+    li {
+      margin-bottom: $margin-gutter;
+    }
+    a {
+      display: block;
+      color: #000;
+      text-decoration: none;
+      border-radius: 5px;
+      box-shadow: 2px 2px 2px 0px #ddd;
+
+      &:hover,
+      &:focus {
+        background: $default-color;
+        color: #fff;
+      }
+    }
+    p {
+      padding: $default-padding / 2;
+      text-align: center;
+      box-sizing: border-box;
+    }
+  }
+  .no-list {
+    p {
+      background: #fff;
+      padding: $default-padding;
+      text-align: center;
+    }
+  }
+  button[type="button"] {
+    @extend %btn-style;
+    width: 100%;
+    background: $default-color;
+    color: #fff;
+    border: 2px solid #ddd;
+  }
+}
+@include mobile {
+  .modal-loc-list {
+    .loc-list-inner {
+      width: calc(100% - #{$default-padding});
+    }
+    ul, .no-list {
+      max-height: 80vh;
+    }
+  }
+}
+@include tablet {
+  .modal-loc-list {
+    .loc-list-inner {
+      width: calc(100% - #{$default-padding});
+    }
+    ul, .no-list {
+      max-height: 80vh;
+    }
+  }
+}
+@include desktop {
+  .modal-loc-list {
+    .loc-list-inner {
+      width: $modal-max-width;
+    }
+    ul, .no-list {
+      max-height: 50vh;
+    }
+  }
+}
