@@ -17,6 +17,18 @@ export default class ModalLocInfo extends Component {
       },
     };
 
+    this.markerTypes = [
+      'default',
+      'cafe',
+      'park',
+      'shop',
+      'company',
+      'school',
+      'hospital',
+      'busStop',
+      'subway',
+      'airport'
+    ];
     this._handleModify = this._handleModify.bind(this);
     this._handleDelete = this._handleDelete.bind(this);
   }
@@ -28,8 +40,11 @@ export default class ModalLocInfo extends Component {
   _handleOnChage = (what, e) => {
     
     const copy_marker_info = Object.assign({}, this.state.markerInfo);
+    let value = e.target.value;
 
-    copy_marker_info[what] = e.target.value;
+
+    copy_marker_info[what] = value;
+    console.log('_handleOnChange: ', copy_marker_info);
     this.setState({
       markerInfo: copy_marker_info
     })
@@ -56,6 +71,10 @@ export default class ModalLocInfo extends Component {
     }
   }
 
+  _handleOnSelect = (e) => {
+    console.log(e.target.value);
+  }
+
   _renderDescription = () => {
     return this.state.markerInfo.marker_des.split('\n').map( (data, index) => {
       return (
@@ -69,6 +88,16 @@ export default class ModalLocInfo extends Component {
     if( !this.state.isModified ) {
       return (
         <div className="modify-loc-details">
+          {/* marker_type */}
+          <div className="modify-type-area">
+            <select onChange={(e) => { this._handleOnChage('marker_type', e) }} defaultValue={this.state.markerInfo.marker_type}>
+              {this.markerTypes.map((data, index) => {
+                return(
+                  <option key={index} value={data}>{data}</option>
+                );
+              })}
+            </select>
+          </div>
           <div className="modify-tit-area">
             <label>
               <input 
@@ -189,9 +218,6 @@ export default class ModalLocInfo extends Component {
             onClick={(e) => this._handleOnSubmit(e)}>
             <fieldset>
               <legend>위치에 대한 정보 입력창</legend>
-              <div className="info-loc">
-                <p>{this.state.markerInfo.marker_addr}</p>
-              </div>
               {this._renderInfo()}
               {this._renderBtns()}
             </fieldset>

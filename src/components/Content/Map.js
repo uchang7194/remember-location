@@ -27,6 +27,18 @@ export default class Map extends Component {
     this.COMMON_URL = '/rememberLocation/';
     this.URL = '';
     this.markers = [];
+    this.markerIcons = {
+      default: 'https://firebasestorage.googleapis.com/v0/b/remember-locatio-1512108016282.appspot.com/o/default.png?alt=media&token=485ce198-30c7-4ae1-ac5e-946eaf50ce74',
+      cafe: 'https://firebasestorage.googleapis.com/v0/b/remember-locatio-1512108016282.appspot.com/o/cafe.png?alt=media&token=5c52b219-a917-4ef5-873b-1e00db64d750',
+      park: 'https://firebasestorage.googleapis.com/v0/b/remember-locatio-1512108016282.appspot.com/o/park.png?alt=media&token=ca1222d0-3283-44d7-9946-3fe85a5078ef',
+      shop: 'https://firebasestorage.googleapis.com/v0/b/remember-locatio-1512108016282.appspot.com/o/shop.png?alt=media&token=3d0ac2e6-4c9b-4fcb-b3a5-00bee7b7f126',
+      company: 'https://firebasestorage.googleapis.com/v0/b/remember-locatio-1512108016282.appspot.com/o/company.png?alt=media&token=61c74708-de22-4b0e-a641-d2017a733cf7',
+      school: 'https://firebasestorage.googleapis.com/v0/b/remember-locatio-1512108016282.appspot.com/o/school.png?alt=media&token=5b4a16d3-6178-4dd9-9f9e-1d376dc8bb7e',
+      hospital: 'https://firebasestorage.googleapis.com/v0/b/remember-locatio-1512108016282.appspot.com/o/hospital.png?alt=media&token=641c91a7-ec49-4109-8ea5-422509c9a5c6',
+      busStop: 'https://firebasestorage.googleapis.com/v0/b/remember-locatio-1512108016282.appspot.com/o/bus.png?alt=media&token=c53627dd-5123-458e-8b60-5f422736e18e',
+      subway: 'https://firebasestorage.googleapis.com/v0/b/remember-locatio-1512108016282.appspot.com/o/subway.png?alt=media&token=abadc712-00cf-4472-a760-5e8949b18655',
+      airport: 'https://firebasestorage.googleapis.com/v0/b/remember-locatio-1512108016282.appspot.com/o/airplane.png?alt=media&token=21fdd585-86a1-4b4a-b7f6-9339d38be63c'
+    }
     this.markerCluster = null;
     // Bound
     this._handleToggleActivedMarkerInfoModal = this._handleToggleActivedMarkerInfoModal.bind(this);
@@ -136,9 +148,14 @@ export default class Map extends Component {
     //   alert('이미 저장되어있습니다.');
     //   return;
     // }
+    const markerInfo = {
+      position, 
+      marker_addr
+    };
+
     this.map.panTo(position);
     this.map.setZoom(15);
-    this._addMarker(position, marker_addr);
+    this._addMarker(markerInfo);
   }
   /**
    * @method _moveTo 
@@ -158,12 +175,29 @@ export default class Map extends Component {
    * @param isSaved 저장된 마커정보인지 판별하기 위한 값 Boolean
    * @param isContainedMarkerChk 이미 포함되어있는 마커정보인지 확인 유무를 위한 값 Boolean
    */ 
-  _addMarker = (position, marker_addr = '', marker_tit = '' , marker_des = '', isSaved = false, isContainedMarkerChk = true) => {
+  _addMarker = (_markerInfo) => {
+    // position, marker_addr = '', marker_tit = '' , marker_des = '', isSaved = false, isContainedMarkerChk = true
     const google_map = window.google.maps;
+    let markerInfo = {
+      position: {}, 
+      marker_addr: '', 
+      marker_tit: '' , 
+      marker_des: '', 
+      marker_type: 'default',
+      isSaved: false, 
+      isContainedMarkerChk: true
+    };
+
+    for(const prop in _markerInfo) {
+      if( markerInfo.hasOwnProperty(prop) ) {
+        markerInfo[prop] = _markerInfo[prop];
+      }
+    }
+    
     let marker = null, infoWindow = null,
         saved_infoWindow = `
         <div class="infowindow">
-          <p>${marker_tit}</p>
+          <p>${markerInfo.marker_tit}</p>
           <div>
             <button class="infoWindow-btn-modify" data-index=${this.markers.length} type="button">확인</button>
           </div>
@@ -176,9 +210,8 @@ export default class Map extends Component {
         </div>
         `;
 
-
-    console.log('this._isContainedMarker(position): ', this._isContainedMarker(position));
-    if( isContainedMarkerChk && this._isContainedMarker(position).length !== 0 ) {
+    console.log('this._isContainedMarker(position): ', this._isContainedMarker(markerInfo.position));
+    if( markerInfo.isContainedMarkerChk && this._isContainedMarker(markerInfo.position).length !== 0 ) {
       alert('이미 등록되어 있는 장소입니다.');
       return;
     }
@@ -188,16 +221,21 @@ export default class Map extends Component {
     //    - 인덱스: index
     //    - 불러온 데이터 인지 판별: isSaved
 
-    marker = new google_map.Marker({
-      position: position,
+    let marker_attr = {
+      position: markerInfo.position,
       map: this.map,
       index: this.markers.length,
-      isSaved,
-      marker_addr,
-      marker_tit,
-      marker_des,
-      title: marker_tit
-    });
+      isSaved: markerInfo.isSaved,
+      marker_addr: markerInfo.marker_addr,
+      marker_tit: markerInfo.marker_tit,
+      marker_des: markerInfo.marker_des,
+      marker_type: markerInfo.marker_type,
+      icon: this.markerIcons[markerInfo.marker_type],
+      title: markerInfo.marker_tit
+    };
+    
+    console.log('')
+    marker = new google_map.Marker(marker_attr);
 
     // 이벤트 추가
     // this._markerOnClick(marker);
@@ -206,7 +244,7 @@ export default class Map extends Component {
     this.markers.push(marker);
 
     // infoWindow 추가
-    if( isSaved ) {
+    if( markerInfo.isSaved ) {
       // 저장된 마커일 때
       infoWindow = new window.google.maps.InfoWindow({
         content: saved_infoWindow
@@ -244,6 +282,7 @@ export default class Map extends Component {
           marker_addr = marker.marker_addr,
           marker_tit = marker.marker_tit,
           marker_des = marker.marker_des,
+          marker_type = !!marker.marker_type ? marker.marker_type : '',
           isSaved = marker.isSaved,
           idx = marker.index;
 
@@ -251,6 +290,7 @@ export default class Map extends Component {
       marker_addr,
       marker_tit,
       marker_des,
+      marker_type,
       position,
       isSaved,
       idx
@@ -307,11 +347,9 @@ export default class Map extends Component {
     let _marker = null;
 
 
-    console.log('compare_marker_pos: ', compare_marker_pos);
     _marker = this.state.markersData.filter(data => {
 
       const _position = data.position;
-      console.log('_position: ', _position);
       if( compare_marker_pos.lat === _position.lat && compare_marker_pos.lng === _position.lng ) {
         return true;
       } else {
@@ -348,7 +386,6 @@ export default class Map extends Component {
       return;
     }
     let copy_markers_data = this.state.markersData.slice();
-
 
     if( !is_modified ) {
       // data: changed data
@@ -411,15 +448,8 @@ export default class Map extends Component {
       const _lat = data.position.lat(),
             _lng = data.position.lng();
 
-      console.log('position.lat: ', position.lat );
-      console.log('position.lng: ', position.lng );
-      
-      console.log('lat: ', _lat );
-      console.log('lng: ', _lng );
-
       if( position.lat === _lat && position.lng === _lng ) {
         data.isSaved = false;
-        console.log('isSaved가 바껴야되는데?')
       }
 
       return data;
@@ -509,8 +539,6 @@ export default class Map extends Component {
     let lat = position.coords.latitude,
         lng = position.coords.longitude;
 
-    console.log('lat: ', lat);
-    console.log('lng: ', lng);
     this.setState({
       current_coords: {
         lat,
@@ -578,10 +606,8 @@ export default class Map extends Component {
    */ 
   _findFirebaseData = (data, _uid) => {
 
-    console.log('_uid: ', _uid);
     for(let prop in data) {
       if( data.hasOwnProperty(prop) ) {
-        console.log('data[prop]', data[prop]);
         if( data[prop].uid === _uid ) {
           return data[prop];
         }
@@ -596,7 +622,6 @@ export default class Map extends Component {
    * @param user_info Facebook 유저정보 Object
    */ 
   _fetchData = (user_info) => {
-    console.log('_fetchData user_info: ', user_info)
     // firebase
     const URL = '/rememberLocation',
           KEY = database.ref().child(URL).push().key;
@@ -609,7 +634,6 @@ export default class Map extends Component {
       //    - false : userData를 추가시켜줌.
       const _snapshot = snapshot.val(),
             _existData = this._findFirebaseData(_snapshot, user_info.auth.userID);
-      console.log('_snapshot: ', _snapshot);
       if( _existData === null ) {
         this.URL = this.COMMON_URL + KEY;
         this._initFirebaseData(user_info, URL, KEY);
@@ -624,7 +648,14 @@ export default class Map extends Component {
           this.URL = this.COMMON_URL + _existData.key;
           
           this.state.markersData.forEach(data => {
-            this._addMarker(data.position, data.marker_addr, data.marker_tit, data.marker_des, data.isSaved, false);
+            this._addMarker({
+              position: data.position, 
+              marker_addr: data.marker_addr, 
+              marker_tit: data.marker_tit, 
+              marker_des: data.marker_des,
+              marker_type: data.marker_type ? data.marker_type : 'default',
+              isSaved: data.isSaved, 
+              isContainedMarkerChk: false});
           });
           
           this.markerCluster.addMarkers(this.markers);
@@ -657,22 +688,29 @@ export default class Map extends Component {
       
       marker.setMap(null);
       if( marker.isSaved ) {
-        console.log(marker);
         new_markers.push(marker);
       }
     });
 
     this.markers = [];
 
-    console.log('new_markers: ', new_markers);
     new_markers.forEach( marker => {
-      this._addMarker(marker.position, marker.marker_addr, marker.marker_tit , marker.marker_des, marker.isSaved, false);
+      let markerInfo = {
+        position: marker.position, 
+        marker_addr: marker.marker_addr, 
+        marker_tit: marker.marker_tit , 
+        marker_des: marker.marker_des,
+        marker_type: marker.marker_type,
+        isSaved: marker.isSaved, 
+        isContainedMarkerChk: false
+      };
+
+      this._addMarker(markerInfo);
     });
 
     // this.markerCluster = null;
     this.markerCluster.clearMarkers();
     this.markerCluster.addMarkers(this.markers);
-    console.log('next this.markers: ', this.markers);
   }
 
   /**
@@ -725,7 +763,6 @@ export default class Map extends Component {
     // this._initFirebaseData(nextProps);
     const user_info = nextProps.userInfo;
 
-    console.log('componentWillReceiveProps');
     if( nextProps.isLoggedIn && JSON.stringify(user_info) !== '{}' ) {
       this.setState({
         isLoading: !this.state.isLoading
@@ -760,7 +797,6 @@ export default class Map extends Component {
       if( CLASS_NAME === 'infoWindow-btn-modify' || CLASS_NAME === 'infoWindow-btn-add' ) {
         const TARGET_INDEX = TARGET.getAttribute('data-index');
         
-        console.log(this.markers[TARGET_INDEX]);
         this._markerOnClick(this.markers[TARGET_INDEX]);
       } 
     });
@@ -787,11 +823,11 @@ export default class Map extends Component {
               type="button"
               className="list-btn"
               onClick={() => { this._handleToggleActivedMarkerListModal() }}
-              ><i class="material-icons">&#xE896;</i></button>
+              ><i className="material-icons">&#xE896;</i></button>
             <button 
               type="button"
               onClick={() => { this._handleGeoLocation(); }}
-              ><i class="material-icons">&#xE8B4;</i></button>
+              ><i className="material-icons">&#xE8B4;</i></button>
           </div>
           {this._renderModal()}
         </div>
